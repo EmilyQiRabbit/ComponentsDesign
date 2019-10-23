@@ -236,14 +236,15 @@ export default class RangePicker extends React.Component<IProps, IState> {
                                   ((dayjsOfDate.isAfter(dayjsOfStart) && dayjsOfDate.isBefore(dayjsOfHover)) || 
                                   (dayjsOfDate.isBefore(dayjsOfStart) && dayjsOfDate.isAfter(dayjsOfHover)))
                   const isBetweenStartAndEnd = showRangeBetweenStartAndEnd && !day.disable && dayjsOfDate.isAfter(dayjsOfStart) && dayjsOfDate.isBefore(dayjsOfEnd);
-                  const disabled = disableDate ? disableDate(date) : false
+                  const disabledByProps = disableDate ? disableDate(date) : false;
+                  const dateDisabled = disabledByProps || day.disable;
                   return (
                     <td 
-                      onClick={() => { !day.disable && this.handleSelected(day) } }
-                      onMouseOver={() => { !day.disable && this.handleMouseOver(day)} }
+                      onClick={() => { !dateDisabled && this.handleSelected(day) } }
+                      onMouseOver={() => { !dateDisabled && this.handleMouseOver(day)} }
                       data-date={day.date}
-                      data-disabled={day.disable || disabled}
-                      data-selected={!day.disable && !disabled && selected}
+                      data-disabled={dateDisabled}
+                      data-selected={!dateDisabled && selected}
                       data-inrange={isBetweenStartAndHover || isBetweenStartAndEnd}
                       key={day.date}
                     >
@@ -262,22 +263,43 @@ export default class RangePicker extends React.Component<IProps, IState> {
   }
 
   renderHeader = (boardIndex: number, year: number, month: number) => {
+    const otherBoardYear = (this.state as any)[`year${boardIndex^1}`]
+    const otherBoardMonth = (this.state as any)[`month${boardIndex^1}`]
+    const otherBoardDate = dayjs(`${otherBoardYear}-${otherBoardMonth}-1`)
+    const curBoardDate = dayjs(`${year}-${month}-1`)
+    let decreaseYearDisable = false, increaseYearDisable = false,
+        decreaseMonthDisable = false, increaseMonthDisable = false
+    if (boardIndex) { // boardIndex == 1
+      if (!curBoardDate.add(-1, 'year').isAfter(otherBoardDate)) {
+        decreaseYearDisable = true
+      }
+      if (!curBoardDate.add(-1, 'month').isAfter(otherBoardDate)) {
+        decreaseMonthDisable = true
+      }
+    } else { // boardIndex == 0
+      if (!curBoardDate.add(1, 'year').isBefore(otherBoardDate)) {
+        increaseYearDisable = true
+      }
+      if (!curBoardDate.add(1, 'month').isBefore(otherBoardDate)) {
+        increaseMonthDisable = true
+      }
+    }
     return <header>
       <p>
-        <span onClick={() => { this.handleChangeMonthBoardClick(-1, `year${boardIndex}`) }}>
+        <span data-disabled={decreaseYearDisable} onClick={() => { !decreaseYearDisable && this.handleChangeMonthBoardClick(-1, `year${boardIndex}`) }}>
           <IconsArrowCaretDownSolid/>
         </span>
         <span>{`${year} 年`}</span>
-        <span onClick={() => { this.handleChangeMonthBoardClick(1, `year${boardIndex}`) }}>
+        <span data-disabled={increaseYearDisable} onClick={() => { !increaseYearDisable && this.handleChangeMonthBoardClick(1, `year${boardIndex}`) }}>
           <IconsArrowCaretDownSolid/>
         </span>
       </p>
       <p>
-        <span onClick={() => { this.handleChangeMonthBoardClick(-1, `month${boardIndex}`) }}>
+        <span data-disabled={decreaseMonthDisable} onClick={() => { !decreaseMonthDisable && this.handleChangeMonthBoardClick(-1, `month${boardIndex}`) }}>
           <IconsArrowCaretDownSolid/>
         </span>
         <span>{`${month + 1} 月`}</span>
-        <span onClick={() => { this.handleChangeMonthBoardClick(1, `month${boardIndex}`) }}>
+        <span data-disabled={increaseMonthDisable} onClick={() => { !increaseMonthDisable && this.handleChangeMonthBoardClick(1, `month${boardIndex}`) }}>
           <IconsArrowCaretDownSolid/>
         </span>
       </p>
@@ -346,6 +368,9 @@ export const StyledRangePickerWrapper = styled.div`
               fill: #a5a5a5;
             }
           }
+        }
+        span[data-disabled=true] {
+          cursor: not-allowed;
         }
         span:nth-child(2) {
           margin: 0 5px;
