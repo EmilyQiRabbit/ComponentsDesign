@@ -2,7 +2,7 @@ import dayjs from 'dayjs'
 import { chunk } from 'lodash';
 import * as React from 'react'
 import styled from 'styled-components';
-import IconsArrowCaretDownSolid from '../../icons/caret_down_solid.svg';
+import IconsArrowCaretDownSolid from '../icons/arrow/caret_down_solid.svg';
 
 interface IDay {
   day: number,
@@ -21,7 +21,8 @@ interface IMonth {
 interface IProps {
   selectedStartDate: string,
   selectedEndDate: string,
-  handleClick: (type: string, date:string) => void
+  handleSelected: (startTime: string, endTime: string) => void
+  disableDate?: (date: string) => boolean
 }
 
 interface IState {
@@ -96,16 +97,12 @@ export default class RangePicker extends React.Component<IProps, IState> {
     super(props)
     const today = dayjs().format('YYYY-MM-DD');
     const { selectedStartDate, selectedEndDate } = this.props;
-    // 日期面板1
-    const year0 = this.getYear(selectedStartDate || today);
-    const month0 = this.getMonth(selectedStartDate || today);
-    // 日期面板2
-    const year1 = selectedEndDate ? 
-                    this.getYear(selectedEndDate) : 
-                    month0 === 11 ? year0 + 1 : year0;
-    const month1 = selectedEndDate ? 
-                    this.getMonth(selectedEndDate) : 
-                    (month0 + 1) % MonthsNumber
+    // 日期面板 右侧
+    const year1 = this.getYear(selectedEndDate || today);
+    const month1 = this.getMonth(selectedEndDate || today);
+    // 日期面板 左侧
+    const year0 = selectedStartDate ? this.getYear(selectedStartDate) : month1 === 0 ? year1 -1 : year1;
+    const month0 = selectedStartDate ? this.getMonth(selectedStartDate) : (month1 + 11) % MonthsNumber;
     this.state = {
       today,
       year0,
@@ -118,6 +115,17 @@ export default class RangePicker extends React.Component<IProps, IState> {
     }
   }
 
+  componentDidUpdate(prevProps: IProps) {
+    const { selectedStartDate, selectedEndDate } = this.props;
+    const { selectedStartDate: prevSelectedStartDate, selectedEndDate: prevSelectedEndDate } = prevProps;
+    if (selectedStartDate !== prevSelectedStartDate || selectedEndDate !== prevSelectedEndDate) {
+      this.setState({
+        selectedEndDate,
+        selectedStartDate
+      })
+    }
+  }
+
   public getYear(date: string):number {
     return dayjs(date).year()
   }
@@ -126,7 +134,7 @@ export default class RangePicker extends React.Component<IProps, IState> {
     return dayjs(date).month()
   }
 
-  public handleChangeDateClick(value: number, type: string) {
+  public handleChangeMonthBoardClick(value: number, type: string) {
     const currentState = this.state as any;
     const nextState = {} as any;
     if (type.match('year')) {
@@ -155,6 +163,7 @@ export default class RangePicker extends React.Component<IProps, IState> {
 
   public handleSelected(day: IDay) {
     const { selectedStartDate, selectedEndDate } = this.state;
+    const { handleSelected } = this.props;
     if ((!selectedStartDate && !selectedEndDate) || (selectedStartDate && selectedEndDate)) {
       this.setState({
         selectedStartDate: day.date,
@@ -167,10 +176,12 @@ export default class RangePicker extends React.Component<IProps, IState> {
           selectedStartDate: day.date,
           selectedEndDate: selectedStartDate,
         })
+        handleSelected(day.date, selectedStartDate)
       } else {
         this.setState({
           selectedEndDate: day.date,
         })
+        handleSelected(selectedStartDate, day.date)
       }
     }
   }
@@ -182,7 +193,7 @@ export default class RangePicker extends React.Component<IProps, IState> {
   }
 
   public renderTableHead = () => {
-    const headerDays = ['一', '二', '三', '四', '五', '六', '日'];
+    const headerDays = [('一'), ('二'), ('三'), ('四'), ('五'), ('六'), ('日')]
     return <thead>
       <tr>
         {
@@ -204,6 +215,7 @@ export default class RangePicker extends React.Component<IProps, IState> {
     const { selectedStartDate, selectedEndDate, hoverdDate } = this.state;
     const showRangeBetweenStartAndHover = selectedStartDate && !selectedEndDate && hoverdDate;
     const showRangeBetweenStartAndEnd = selectedStartDate && selectedEndDate;
+    const { disableDate } = this.props
     return <tbody>
       {
         days.map((daysArr, i) => {
@@ -219,18 +231,19 @@ export default class RangePicker extends React.Component<IProps, IState> {
                   const dayjsOfHover = dayjs(hoverdDate);
                   // 是否被选中
                   const selected = date === selectedStartDate || date === selectedEndDate;
-                  // 是否处于合适范围内，需要加上浅蓝色北京
+                  // 是否处于合适范围内，需要加上浅蓝色背景
                   const isBetweenStartAndHover = showRangeBetweenStartAndHover && !day.disable &&
                                   ((dayjsOfDate.isAfter(dayjsOfStart) && dayjsOfDate.isBefore(dayjsOfHover)) || 
                                   (dayjsOfDate.isBefore(dayjsOfStart) && dayjsOfDate.isAfter(dayjsOfHover)))
-                  const isBetweenStartAndEnd = showRangeBetweenStartAndEnd && !day.disable && dayjsOfDate.isAfter(dayjsOfStart) && dayjsOfDate.isBefore(dayjsOfEnd)
+                  const isBetweenStartAndEnd = showRangeBetweenStartAndEnd && !day.disable && dayjsOfDate.isAfter(dayjsOfStart) && dayjsOfDate.isBefore(dayjsOfEnd);
+                  const disabled = disableDate ? disableDate(date) : false
                   return (
                     <td 
                       onClick={() => { !day.disable && this.handleSelected(day) } }
                       onMouseOver={() => { !day.disable && this.handleMouseOver(day)} }
                       data-date={day.date}
-                      data-disabled={day.disable}
-                      data-selected={selected}
+                      data-disabled={day.disable || disabled}
+                      data-selected={!day.disable && !disabled && selected}
                       data-inrange={isBetweenStartAndHover || isBetweenStartAndEnd}
                       key={day.date}
                     >
@@ -248,66 +261,45 @@ export default class RangePicker extends React.Component<IProps, IState> {
     </tbody>
   }
 
+  renderHeader = (boardIndex: number, year: number, month: number) => {
+    return <header>
+      <p>
+        <span onClick={() => { this.handleChangeMonthBoardClick(-1, `year${boardIndex}`) }}>
+          <IconsArrowCaretDownSolid/>
+        </span>
+        <span>{`${year} 年`}</span>
+        <span onClick={() => { this.handleChangeMonthBoardClick(1, `year${boardIndex}`) }}>
+          <IconsArrowCaretDownSolid/>
+        </span>
+      </p>
+      <p>
+        <span onClick={() => { this.handleChangeMonthBoardClick(-1, `month${boardIndex}`) }}>
+          <IconsArrowCaretDownSolid/>
+        </span>
+        <span>{`${month + 1} 月`}</span>
+        <span onClick={() => { this.handleChangeMonthBoardClick(1, `month${boardIndex}`) }}>
+          <IconsArrowCaretDownSolid/>
+        </span>
+      </p>
+    </header>
+  }
+
   public render() {
     // const { selected, today } = this.state
     const { year0, month0, year1, month1 } = this.state
     const daysOnFirstBoard: IMonth[] = chunk(daysInMonth(year0)[month0], 7);
     const daysOnSecondBoard: IMonth[] = chunk(daysInMonth(year1)[month1], 7);
-    if (daysOnFirstBoard.length > 0 && daysOnFirstBoard[daysOnFirstBoard.length - 1][0].disable) {
-      daysOnFirstBoard.pop()
-    }
-    if (daysOnSecondBoard.length > 0 && daysOnSecondBoard[daysOnSecondBoard.length - 1][0].disable) {
-      daysOnSecondBoard.pop()
-    }
     return (
       <StyledRangePickerWrapper>
         <div className='month-wrapper'>
-          <header>
-            <p>
-              <span onClick={() => { this.handleChangeDateClick(-1, 'year0') }}>
-                <IconsArrowCaretDownSolid/>
-              </span>
-              <span>{`${year0} 年`}</span>
-              <span onClick={() => { this.handleChangeDateClick(1, 'year0') }}>
-                <IconsArrowCaretDownSolid/>
-              </span>
-            </p>
-            <p>
-              <span onClick={() => { this.handleChangeDateClick(-1, 'month0') }}>
-                <IconsArrowCaretDownSolid/>
-              </span>
-              <span>{`${month0 + 1} 月`}</span>
-              <span onClick={() => { this.handleChangeDateClick(1, 'month0') }}>
-                <IconsArrowCaretDownSolid/>
-              </span>
-            </p>
-          </header>
+          { this.renderHeader(0, year0, month0) }
           <table cellSpacing={0}>
             { this.renderTableHead() }
             { this.renderTableBody(daysOnFirstBoard) }
           </table>
         </div>
         <div className='month-wrapper'>
-          <header>
-            <p>
-              <span onClick={() => { this.handleChangeDateClick(-1, 'year1') }}>
-                <IconsArrowCaretDownSolid/>
-              </span>
-              <span>{`${year1} 年`}</span>
-              <span onClick={() => { this.handleChangeDateClick(1, 'year1') }}>
-                <IconsArrowCaretDownSolid/>
-              </span>
-            </p>
-            <p>
-              <span onClick={() => { this.handleChangeDateClick(-1, 'month1') }}>
-                <IconsArrowCaretDownSolid/>
-              </span>
-              <span>{`${month1 + 1} 月`}</span>
-              <span onClick={() => { this.handleChangeDateClick(1, 'month1') }}>
-                <IconsArrowCaretDownSolid/>
-              </span>
-            </p>
-          </header>
+          { this.renderHeader(1, year1, month1) }
           <table cellSpacing={0}>
             { this.renderTableHead() }
             { this.renderTableBody(daysOnSecondBoard) }
@@ -331,11 +323,12 @@ export const StyledRangePickerWrapper = styled.div`
     flex-direction: column;
     width: 50%;
     height: 100%;
-    padding: 10px;
+    padding: 0 10px 10px;
     box-sizing: border-box;
+    font-size: 12px;
     
     header {
-      height: 40px;
+      height: 35px;
       line-height: 40px;
       display: flex;
       flex-direction: row;
@@ -374,7 +367,7 @@ export const StyledRangePickerWrapper = styled.div`
         display: inline-block;
         text-align: center;
         border-radius: 2px;
-        margin: 4px;
+        margin: 3px;
       }
       th {
         span {
