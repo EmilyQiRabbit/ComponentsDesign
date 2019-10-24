@@ -23,6 +23,7 @@ interface IProps {
   selectedEndDate: string,
   handleSelected: (startTime: string, endTime: string) => void
   disableDate?: (date: string) => boolean
+  visibleState: boolean
 }
 
 interface IState {
@@ -78,11 +79,13 @@ function daysInMonth(year: number):any[] {
       }) 
     }
     // 下个月的前几天
-    for (let i = 1; i <= next; i++) { thisMonth.push({
-      day: i,
-      date: index + 2 > 12 ? `${year + 1}-1-${i}`: `${year}-${index+2}-${i}`,
-      disable: true
-    }) }
+    for (let i = 1; i <= next; i++) { 
+      thisMonth.push({
+        day: i,
+        date: index + 2 > 12 ? `${year + 1}-1-${i}`: `${year}-${index+2}-${i}`,
+        disable: true
+      }) 
+    }
     // 凑够 42 天，即 7 天 * 6 周
     thisMonth.length = 42
     return thisMonth
@@ -98,11 +101,16 @@ export default class RangePicker extends React.Component<IProps, IState> {
     const today = dayjs().format('YYYY-MM-DD');
     const { selectedStartDate, selectedEndDate } = this.props;
     // 日期面板 右侧
-    const year1 = this.getYear(selectedEndDate || today);
-    const month1 = this.getMonth(selectedEndDate || today);
+    let year1 = this.getYear(selectedEndDate || today);
+    let month1 = this.getMonth(selectedEndDate || today);
     // 日期面板 左侧
-    const year0 = selectedStartDate ? this.getYear(selectedStartDate) : month1 === 0 ? year1 -1 : year1;
+    const year0 = selectedStartDate ? this.getYear(selectedStartDate) : year1 - (month1 === 0 ? 1 : 0);
     const month0 = selectedStartDate ? this.getMonth(selectedStartDate) : (month1 + 11) % MonthsNumber;
+    // 两个面板的月份不可以一样
+    if (year0 === year1 && month0 === month1) {
+      month1 = (month0 + 1) % MonthsNumber;
+      year1 = year0 + (month0 === 11 ? 1 : 0);
+    }
     this.state = {
       today,
       year0,
@@ -116,9 +124,9 @@ export default class RangePicker extends React.Component<IProps, IState> {
   }
 
   componentDidUpdate(prevProps: IProps) {
-    const { selectedStartDate, selectedEndDate } = this.props;
-    const { selectedStartDate: prevSelectedStartDate, selectedEndDate: prevSelectedEndDate } = prevProps;
-    if (selectedStartDate !== prevSelectedStartDate || selectedEndDate !== prevSelectedEndDate) {
+    const { selectedStartDate, selectedEndDate, visibleState } = this.props;
+    const { selectedStartDate: prevSelectedStartDate, selectedEndDate: prevSelectedEndDate, visibleState: preVisibleState } = prevProps;
+    if (selectedStartDate !== prevSelectedStartDate || selectedEndDate !== prevSelectedEndDate || (visibleState && !preVisibleState)) {
       this.setState({
         selectedEndDate,
         selectedStartDate
@@ -230,7 +238,7 @@ export default class RangePicker extends React.Component<IProps, IState> {
                   const dayjsOfEnd = dayjs(selectedEndDate);
                   const dayjsOfHover = dayjs(hoverdDate);
                   // 是否被选中
-                  const selected = date === selectedStartDate || date === selectedEndDate;
+                  const selected = dayjs(date).isSame(dayjs(selectedStartDate)) || dayjs(date).isSame(dayjs(selectedEndDate));
                   // 是否处于合适范围内，需要加上浅蓝色背景
                   const isBetweenStartAndHover = showRangeBetweenStartAndHover && !day.disable &&
                                   ((dayjsOfDate.isAfter(dayjsOfStart) && dayjsOfDate.isBefore(dayjsOfHover)) || 
