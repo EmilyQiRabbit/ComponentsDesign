@@ -2,7 +2,7 @@ import dayjs from 'dayjs'
 import { chunk } from 'lodash';
 import * as React from 'react'
 import styled from 'styled-components';
-import IconsArrowCaretDownSolid from '../icons/arrow/caret_down_solid.svg';
+import CaretDownSolidImage from '../icons/caret_down_solid.svg';
 
 interface IDay {
   day: number,
@@ -295,20 +295,20 @@ export default class RangePicker extends React.Component<IProps, IState> {
     return <header>
       <p>
         <span data-disabled={decreaseYearDisable} onClick={() => { !decreaseYearDisable && this.handleChangeMonthBoardClick(-1, `year${boardIndex}`) }}>
-          <IconsArrowCaretDownSolid/>
+          <CaretDownSolidImage/>
         </span>
         <span>{`${year} 年`}</span>
         <span data-disabled={increaseYearDisable} onClick={() => { !increaseYearDisable && this.handleChangeMonthBoardClick(1, `year${boardIndex}`) }}>
-          <IconsArrowCaretDownSolid/>
+          <CaretDownSolidImage/>
         </span>
       </p>
       <p>
         <span data-disabled={decreaseMonthDisable} onClick={() => { !decreaseMonthDisable && this.handleChangeMonthBoardClick(-1, `month${boardIndex}`) }}>
-          <IconsArrowCaretDownSolid/>
+          <CaretDownSolidImage/>
         </span>
         <span>{`${month + 1} 月`}</span>
         <span data-disabled={increaseMonthDisable} onClick={() => { !increaseMonthDisable && this.handleChangeMonthBoardClick(1, `month${boardIndex}`) }}>
-          <IconsArrowCaretDownSolid/>
+          <CaretDownSolidImage/>
         </span>
       </p>
     </header>
