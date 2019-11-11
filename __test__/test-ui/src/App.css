@@ -31,3 +31,12 @@
     transform: rotate(360deg);
   }
 }
+
+.checkbox-wrapper {
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.checkbox-wrapper > p {
+  margin-top: 10px;
+}
