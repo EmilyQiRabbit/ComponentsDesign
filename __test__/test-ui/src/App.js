@@ -1,20 +1,18 @@
 import React from 'react';
-import logo from './logo.svg';
+// import logo from './logo.svg';
 import './App.css';
-import Loader from './components/Loader.jsx'
+import RangePicker from './components/RangePicker'
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          This is a testing playground
-        </p>
+      <div className="App-header">
+        {/* <img src={logo} className="App-logo" alt="logo" /> */}
+        <p>This is a testing playground</p>
         <div>
-          <Loader/>
+          <RangePicker selectedStartDate='' selectedEndDate='' visibleState={true} handleSelected={() => {}}/>
         </div>
-      </header>
+      </div>
     </div>
   );
 }

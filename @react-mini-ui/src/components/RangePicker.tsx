@@ -292,26 +292,26 @@ export default class RangePicker extends React.Component<IProps, IState> {
         increaseMonthDisable = true
       }
     }
-    return <header>
+    return <div className='header'>
       <p>
         <span data-disabled={decreaseYearDisable} onClick={() => { !decreaseYearDisable && this.handleChangeMonthBoardClick(-1, `year${boardIndex}`) }}>
-          <CaretDownSolidImage/>
+          <img src={CaretDownSolidImage}/>
         </span>
         <span>{`${year} 年`}</span>
         <span data-disabled={increaseYearDisable} onClick={() => { !increaseYearDisable && this.handleChangeMonthBoardClick(1, `year${boardIndex}`) }}>
-          <CaretDownSolidImage/>
+          <img src={CaretDownSolidImage}/>
         </span>
       </p>
       <p>
         <span data-disabled={decreaseMonthDisable} onClick={() => { !decreaseMonthDisable && this.handleChangeMonthBoardClick(-1, `month${boardIndex}`) }}>
-          <CaretDownSolidImage/>
+          <img src={CaretDownSolidImage}/>
         </span>
         <span>{`${month + 1} 月`}</span>
         <span data-disabled={increaseMonthDisable} onClick={() => { !increaseMonthDisable && this.handleChangeMonthBoardClick(1, `month${boardIndex}`) }}>
-          <CaretDownSolidImage/>
+          <img src={CaretDownSolidImage}/>
         </span>
       </p>
-    </header>
+    </div>
   }
 
   public render() {
@@ -345,8 +345,9 @@ export const StyledRangePickerWrapper = styled.div`
   display: flex;
   flex-direction: row;
   width: 460px;
-  height: 240px;
+  height: 255px;
   background: white;
+  color: rgba(0,0,0,.65);
   box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
   .month-wrapper {
     display: flex;
@@ -357,7 +358,7 @@ export const StyledRangePickerWrapper = styled.div`
     box-sizing: border-box;
     font-size: 12px;
     
-    header {
+    .header {
       height: 35px;
       line-height: 40px;
       display: flex;
@@ -366,8 +367,9 @@ export const StyledRangePickerWrapper = styled.div`
       p {
         display: flex;
         flex-direction: row;
+        margin: 0;
         span {
-          svg {
+          img {
             width: 20px;
             transform: rotate(90deg);
             position: relative;
@@ -384,7 +386,7 @@ export const StyledRangePickerWrapper = styled.div`
           margin: 0 5px;
         }
         span:last-child {
-          svg {
+          img {
             transform: rotate(-90deg);
             left: -1px;
           }
