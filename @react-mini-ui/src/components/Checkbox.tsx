@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import '../style/checkbox.css'
 
 export const Checkbox = () => {
   const [checked, setChecked] = useState(false);
   return <StyledCheckbox className={`${checked ? 'checked' : ''}`} onClick={() => {
     setChecked(!checked)
-  }}></StyledCheckbox>
+  }}><span className='ripple'></span></StyledCheckbox> // 这个 span 用于制作波纹效果
 }
 
 const StyledCheckbox = styled.div`
@@ -17,6 +18,19 @@ const StyledCheckbox = styled.div`
   position: relative;
   border-collapse: separate;
   transition: all .3s;
+  .ripple {
+    &:after {
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 100%;
+      height: 100%;
+      border: 1px solid #1890ff;
+      border-radius: 2px;
+      visibility: hidden;
+      content: '';
+    }
+  }
   &:hover {
     border-color: #1890ff;
   }
@@ -40,6 +54,13 @@ const StyledCheckbox = styled.div`
     border-color: #1890ff;
     &:after{
       opacity: 1;
+    }
+    .ripple {
+      &:after {
+        visibility: visible;
+        animation: checkboxEffect .36s ease-in-out;
+        animation-fill-mode: both;
+      }
     }
   }
 `
