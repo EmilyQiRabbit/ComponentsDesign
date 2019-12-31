@@ -8,4 +8,4 @@
 
 ## Checkbox
 
-仿 Antd 的 checkbox。无需图片，选中时带波纹效果。
+无需图片的 Checkbox 组件，选中时带一个小小的波纹效果。
