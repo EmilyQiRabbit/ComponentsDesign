@@ -9,3 +9,7 @@
 ## Checkbox
 
 无需图片的 Checkbox 组件，选中时带一个小小的波纹效果。
+
+## CheckList
+
+多选矩阵，支持快捷操作。
