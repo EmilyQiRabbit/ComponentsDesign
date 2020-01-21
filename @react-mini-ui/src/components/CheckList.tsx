@@ -1,20 +1,223 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
+import dayjs from 'dayjs';
+import { PureComponent } from 'react';
 
-export const CheckList = () => {
-  return <LightCheckbox disabled={false} checked={false}>1</LightCheckbox>
+const titleOptions = ['壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖', '拾'];
+const plainOptions = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+
+export const OUTPUT_FORMAT = 'YYYY-MM-DD';
+export const DISPLAY_FORMAT = 'MM-DD';
+
+export interface AdScheduleModel {
+  date: string;
+  round: number;
 }
+
+export interface RoundCheckboxState {
+  checkedMap: Record<string, Set<string>>;
+}
+
+export interface RoundCheckboxProps {
+  availableRounds: Record<string, boolean>;
+  dateRange?: dayjs.Dayjs[];
+  defaultValue?: AdScheduleModel[];
+  onChange?(data: Record<string, string[]>): void;
+}
+
+export class CheckList extends PureComponent<
+  RoundCheckboxProps,
+  RoundCheckboxState
+> {
+  private dates: string[];
+
+  constructor(props: RoundCheckboxProps) {
+    super(props);
+    this.dates = this.loadDateRange(props.dateRange);
+    const checkedMap = this.loadDefaultValue(props.defaultValue);
+    this.dates.forEach((date) => (checkedMap[date] = checkedMap[date] || new Set()));
+    this.state = { checkedMap };
+  }
+
+  private loadDefaultValue(
+    defaults: AdScheduleModel[] | undefined,
+  ): Record<string, Set<string>> {
+    if (!defaults) {
+      return {};
+    }
+    return defaults.reduce(
+      (map, { date, round }) => {
+        map[date] = map[date] || new Set();
+        map[date].add(round + '')
+        return map;
+      },
+      {} as Record<string, Set<string>>,
+    );
+  }
+
+  componentWillReceiveProps(next: RoundCheckboxProps) {
+    if (next.dateRange !== this.props.dateRange) {
+      this.dates = this.loadDateRange(next.dateRange);
+    }
+  }
+
+  private loadDateRange(range: dayjs.Dayjs[] | undefined): string[] {
+    if (!range || !range[0] || !range[1]) {
+      return [];
+    }
+    const dates: string[] = [];
+    for (
+      let k = range[0].clone();
+      !k.isAfter(range[1], 'd');
+      k = k.add(1, 'd')
+    ) {
+      dates.push(k.format(OUTPUT_FORMAT));
+    }
+    return dates;
+  }
+
+  onCheckboxClick = (date: string, round: string, checked: boolean) => {
+    const { checkedMap } = this.state;
+    const rounds = checkedMap[date] || new Set();
+    if (checked) {
+      rounds.add(round)
+    } else {
+      rounds.delete(round)
+    }
+    this.setState(
+      {
+        checkedMap: {
+          ...this.state.checkedMap,
+          [date]: rounds,
+        },
+      }
+    );
+  }
+
+  selectRow = (date: string) => {
+    const { checkedMap } = this.state;
+    const currentSelected = checkedMap[date] || new Set();
+    this.setState(
+      {
+        checkedMap: {
+          ...this.state.checkedMap,
+          [date]: currentSelected.size === plainOptions.length ? 
+                  new Set() : new Set(plainOptions),
+        },
+      }
+    );
+  }
+
+
+  render() {
+    if (this.dates.length === 0) {
+      return null;
+    }
+    const { checkedMap } = this.state;
+    return (
+      <Root>
+        <div className="row title" >
+          <label className="label"></label>
+          {
+            titleOptions.map((title) => {
+              return <span>{title}</span>
+            })
+          }
+        </div>
+        {
+          this.dates.map((date) => (
+            <div className="row" key={date}>
+              <label className="label select-row" 
+                onClick={() => this.selectRow(date)}
+              >{date}</label>
+              {plainOptions.map((round) => (
+                <Checkbox
+                  key={round}
+                  checked={checkedMap[date] && checkedMap[date].has(round)}
+                  disabled={false}
+                  onCheckboxClick={(checked: boolean) => this.onCheckboxClick(date, round, checked)}
+                >{round}</Checkbox>
+              ))}
+            </div>
+          ))
+        }
+        <div className="row">
+          <label className="label">&nbsp;</label>
+          <span className='select-all'>全选</span>
+        </div>
+        <div className="box" />
+      </Root>
+    );
+  }
+}
+
+const Root = styled.div`
+  position: relative;
+  margin-left: 5px;
+  > .row {
+    margin-left: 20px;
+    &.title {
+      span {
+        font-size: 13px;
+        cursor: default;
+        color: #a5a5a5;
+        width: 22px;
+        height: 22px;
+        line-height: 22px;
+        display: inline-block;
+        text-align: center;
+        border-radius: 2px;
+        margin: 3px;
+      }
+    }
+    > .label {
+      &.select-row {
+        cursor: pointer;
+        &:hover {
+          color: #6da0e3;
+        }
+      }
+      font-size: 13px;
+      color: #a5a5a5;
+      display: inline-block;
+      width: 110px;
+    }
+    > .select-all {
+      font-size: 13px;
+      display: inline-block;
+      margin-left: 10px;
+      cursor: pointer;
+      &:hover {
+        color: #6da0e3;
+      }
+    }
+  }
+
+  > .box {
+    position: absolute;
+    border: 1px solid rgba(24, 144, 255, 0.8);
+    background: rgba(24, 144, 255, 0.3);
+    display: none;
+  }
+`;
 
 // LightCheckbox
-interface LightCheckboxProps {
+interface CheckboxProps {
   disabled: boolean;
   checked: boolean;
-  children: any
+  children: any;
+  onCheckboxClick: (checked: boolean) => void
 }
 
-const LightCheckbox = (props: LightCheckboxProps) => {
-  const { disabled, checked, children } = props;
-  return <StyledSpan className={`${disabled && 'disabled'} ${checked && 'checked'}`}>{children}</StyledSpan>
+const Checkbox = (props: CheckboxProps) => {
+  const { children, disabled, checked } = props;
+  const onCheckboxClick = () => {
+    props.onCheckboxClick(!checked)
+  }
+  return <StyledSpan 
+    className={`${disabled && 'disabled'} ${checked && 'checked'}`}
+    onClick={onCheckboxClick}
+  >{children}</StyledSpan>
 }
 
 const StyledSpan = styled.span`
@@ -38,8 +241,12 @@ const StyledSpan = styled.span`
     background: #6da0e3
   }
   &:hover {
-    background: rgba(109, 160, 227, 0.2);
-    color: #6da0e3;
+    &:not(.checked) {
+      &:not(.disabled) {
+        background: rgba(109, 160, 227, 0.2);
+        color: #6da0e3;
+      }
+    }
   }
   &:last-child {
     padding-right: 2px;
