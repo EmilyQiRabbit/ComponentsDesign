@@ -16,6 +16,7 @@ export interface AdScheduleModel {
 
 export interface RoundCheckboxState {
   checkedMap: Record<string, Set<string>>;
+  prevCheckedDate: string;
 }
 
 export interface RoundCheckboxProps {
@@ -29,14 +30,17 @@ export class CheckList extends PureComponent<
   RoundCheckboxProps,
   RoundCheckboxState
 > {
+  // 日期范围
   private dates: string[];
 
   constructor(props: RoundCheckboxProps) {
     super(props);
     this.dates = this.loadDateRange(props.dateRange);
     const checkedMap = this.loadDefaultValue(props.defaultValue);
-    this.dates.forEach((date) => (checkedMap[date] = checkedMap[date] || new Set()));
-    this.state = { checkedMap };
+    this.dates.forEach(
+      (date) => (checkedMap[date] = checkedMap[date] || new Set()),
+    );
+    this.state = { checkedMap, prevCheckedDate: '' };
   }
 
   private loadDefaultValue(
@@ -48,7 +52,7 @@ export class CheckList extends PureComponent<
     return defaults.reduce(
       (map, { date, round }) => {
         map[date] = map[date] || new Set();
-        map[date].add(round + '')
+        map[date].add(round + '');
         return map;
       },
       {} as Record<string, Set<string>>,
@@ -80,34 +84,50 @@ export class CheckList extends PureComponent<
     const { checkedMap } = this.state;
     const rounds = checkedMap[date] || new Set();
     if (checked) {
-      rounds.add(round)
+      rounds.add(round);
     } else {
-      rounds.delete(round)
+      rounds.delete(round);
     }
-    this.setState(
-      {
+    this.setState({
+      checkedMap: {
+        ...this.state.checkedMap,
+        [date]: rounds,
+      },
+    });
+  };
+
+  // todos 未完善
+  selectRow = (date: string, event: React.MouseEvent) => {
+    const { checkedMap, prevCheckedDate } = this.state;
+    // shift
+    if (event.metaKey && prevCheckedDate) {
+      const checked = {} as  Record<string, Set<string>>
+      this.dates.forEach((date0: string) => {
+        if (dayjs(date0).isBetween(prevCheckedDate, date, "day", '[]')) {
+          checked[date0] = new Set(plainOptions)
+        }
+      })
+      this.setState({
         checkedMap: {
           ...this.state.checkedMap,
-          [date]: rounds,
-        },
-      }
-    );
-  }
-
-  selectRow = (date: string) => {
-    const { checkedMap } = this.state;
-    const currentSelected = checkedMap[date] || new Set();
-    this.setState(
-      {
+          ...checked
+        }
+      })
+    // no shift
+    } else {
+      const currentSelected = checkedMap[date] || new Set();
+      this.setState({
+        prevCheckedDate: date,
         checkedMap: {
           ...this.state.checkedMap,
-          [date]: currentSelected.size === plainOptions.length ? 
-                  new Set() : new Set(plainOptions),
+          [date]:
+            currentSelected.size === plainOptions.length
+              ? new Set()
+              : new Set(plainOptions),
         },
-      }
-    );
-  }
-
+      });
+    }
+  };
 
   render() {
     if (this.dates.length === 0) {
@@ -116,34 +136,42 @@ export class CheckList extends PureComponent<
     const { checkedMap } = this.state;
     return (
       <Root>
-        <div className="row title" >
+        <div className="row title">
           <label className="label"></label>
-          {
-            titleOptions.map((title) => {
-              return <span>{title}</span>
-            })
-          }
+          {titleOptions.map((title) => {
+            return <span>{title}</span>;
+          })}
         </div>
-        {
-          this.dates.map((date) => (
-            <div className="row" key={date}>
-              <label className="label select-row" 
-                onClick={() => this.selectRow(date)}
-              >{date}</label>
-              {plainOptions.map((round) => (
-                <Checkbox
-                  key={round}
-                  checked={checkedMap[date] && checkedMap[date].has(round)}
-                  disabled={false}
-                  onCheckboxClick={(checked: boolean) => this.onCheckboxClick(date, round, checked)}
-                >{round}</Checkbox>
-              ))}
-            </div>
-          ))
-        }
+        {this.dates.map((date) => (
+          <div className="row" key={date}>
+            <label
+              className={`label select-row ${!!checkedMap[date] && checkedMap[date].size && 'selected'}`}
+              onClick={(event: React.MouseEvent) => {
+                event.stopPropagation();
+                event.preventDefault();
+                this.selectRow(date, event);
+                return false;
+              }}
+            >
+              {date}
+            </label>
+            {plainOptions.map((round) => (
+              <Checkbox
+                key={round}
+                checked={checkedMap[date] && checkedMap[date].has(round)}
+                disabled={false}
+                onCheckboxClick={(checked: boolean) =>
+                  this.onCheckboxClick(date, round, checked)
+                }
+              >
+                {round}
+              </Checkbox>
+            ))}
+          </div>
+        ))}
         <div className="row">
           <label className="label">&nbsp;</label>
-          <span className='select-all'>全选</span>
+          <span className="select-all">全选</span>
         </div>
         <div className="box" />
       </Root>
@@ -173,7 +201,7 @@ const Root = styled.div`
     > .label {
       &.select-row {
         cursor: pointer;
-        &:hover {
+        &:hover,&.selected {
           color: #6da0e3;
         }
       }
