@@ -1,39 +1,39 @@
 import React from 'react';
 import styled from 'styled-components';
-import dayjs from 'dayjs';
+import moment from 'moment';
 import { PureComponent } from 'react';
 
-const titleOptions = ['壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖', '拾'];
+const titleOptions = [ '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖', '拾'];
 const plainOptions = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
 export const OUTPUT_FORMAT = 'YYYY-MM-DD';
 export const DISPLAY_FORMAT = 'MM-DD';
 
-export interface AdScheduleModel {
+interface ScheduleModel {
   date: string;
   round: number;
 }
 
-export interface RoundCheckboxState {
+export interface CheckListState {
   checkedMap: Record<string, Set<string>>;
   prevCheckedDate: string;
 }
 
-export interface RoundCheckboxProps {
+export interface CheckListProps {
   availableRounds: Record<string, boolean>;
-  dateRange?: dayjs.Dayjs[];
-  defaultValue?: AdScheduleModel[];
+  dateRange?: moment.Moment[];
+  defaultValue?: ScheduleModel[];
   onChange?(data: Record<string, string[]>): void;
 }
 
 export class CheckList extends PureComponent<
-  RoundCheckboxProps,
-  RoundCheckboxState
+  CheckListProps,
+  CheckListState
 > {
   // 日期范围
   private dates: string[];
 
-  constructor(props: RoundCheckboxProps) {
+  constructor(props: CheckListProps) {
     super(props);
     this.dates = this.loadDateRange(props.dateRange);
     const checkedMap = this.loadDefaultValue(props.defaultValue);
@@ -44,7 +44,7 @@ export class CheckList extends PureComponent<
   }
 
   private loadDefaultValue(
-    defaults: AdScheduleModel[] | undefined,
+    defaults: ScheduleModel[] | undefined,
   ): Record<string, Set<string>> {
     if (!defaults) {
       return {};
@@ -59,13 +59,13 @@ export class CheckList extends PureComponent<
     );
   }
 
-  componentWillReceiveProps(next: RoundCheckboxProps) {
+  componentWillReceiveProps(next: CheckListProps) {
     if (next.dateRange !== this.props.dateRange) {
       this.dates = this.loadDateRange(next.dateRange);
     }
   }
 
-  private loadDateRange(range: dayjs.Dayjs[] | undefined): string[] {
+  private loadDateRange(range: moment.Moment[] | undefined): string[] {
     if (!range || !range[0] || !range[1]) {
       return [];
     }
@@ -99,21 +99,21 @@ export class CheckList extends PureComponent<
   // todos 未完善
   selectRow = (date: string, event: React.MouseEvent) => {
     const { checkedMap, prevCheckedDate } = this.state;
-    // shift
+    // cmd
     if (event.metaKey && prevCheckedDate) {
-      const checked = {} as  Record<string, Set<string>>
+      const checked = {} as Record<string, Set<string>>;
       this.dates.forEach((date0: string) => {
-        if (dayjs(date0).isBetween(prevCheckedDate, date, "day", '[]')) {
-          checked[date0] = new Set(plainOptions)
+        if (moment(date0).isBetween(prevCheckedDate, date, 'day', '[]')) {
+          checked[date0] = new Set(plainOptions);
         }
-      })
+      });
       this.setState({
         checkedMap: {
           ...this.state.checkedMap,
-          ...checked
-        }
-      })
-    // no shift
+          ...checked,
+        },
+      });
+      // no cmd
     } else {
       const currentSelected = checkedMap[date] || new Set();
       this.setState({
@@ -145,7 +145,9 @@ export class CheckList extends PureComponent<
         {this.dates.map((date) => (
           <div className="row" key={date}>
             <label
-              className={`label select-row ${!!checkedMap[date] && checkedMap[date].size && 'selected'}`}
+              className={`label select-row ${!!checkedMap[date] &&
+                checkedMap[date].size &&
+                'selected'}`}
               onClick={(event: React.MouseEvent) => {
                 event.stopPropagation();
                 event.preventDefault();
@@ -201,7 +203,8 @@ const Root = styled.div`
     > .label {
       &.select-row {
         cursor: pointer;
-        &:hover,&.selected {
+        &:hover,
+        &.selected {
           color: #6da0e3;
         }
       }
