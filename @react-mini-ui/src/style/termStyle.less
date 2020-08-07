@@ -1,0 +1,142 @@
+@blue: #1890ff;
+@red: #ff4d4f;
+@lightBlue: #e6f7ff;
+// test
+
+.indexContent {
+  padding: 20px;
+  h1 {
+    font-size: 40px;
+  }
+}
+
+.termCell,
+.termCellActive,
+.termCellAll,
+.termCellAllActive {
+  display: block;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 2px;
+  line-height: 30px;
+  cursor: pointer;
+  box-sizing: border-box;
+  margin-right: 10px;
+}
+.termCell:hover,
+.termCellAll:hover {
+  background: @lightBlue;
+}
+.termCellActive,
+.termCellAllActive {
+  color: @blue;
+  background: @lightBlue;
+}
+
+.termCellActive div {
+  flex: 1;
+}
+
+.tag {
+  font-size: 14px !important;
+  padding: 10px !important;
+  margin-bottom: 15px !important;
+  cursor: pointer;
+  :global {
+    .anticon-close {
+      font-size: 16px !important;
+      vertical-align: -0.25em;
+    }
+  }
+}
+
+.settingIcon {
+  margin-right: 3px;
+  position: relative;
+  top: 2px;
+  svg {
+    height: 15px;
+    width: 15px;
+  }
+}
+
+.itemEditList {
+  position: relative;
+  top: -10px;
+  .hoverItem {
+    background: #fafafa;
+  }
+  input {
+    &::placeholder {
+      color: #d9d9d9;
+    }
+    &:focus {
+      border: 1px #40a9ff solid !important;
+      border-right-width: 1px !important;
+      outline: 0;
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+  }
+  li {
+    display: flex;
+    flex-direction: row;
+    justify-content: start;
+    height: 40px;
+    cursor: pointer;
+    svg {
+      margin-right: 8px;
+    }
+    .nameSpan,
+    .nameInput {
+      flex-grow: 1;
+      margin-right: 16px;
+    }
+    .nameInput {
+      box-sizing: border-box;
+      border: 1px #d9d9d9 solid;
+      padding: 4px 8px;
+      border-radius: 2px;
+      cursor: text;
+      background: white;
+    }
+    .edit {
+      font-size: 13px;
+      color: @blue;
+      margin-right: 4px;
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+    .delete {
+      font-size: 13px;
+      color: @red;
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+  }
+}
+
+.newTerm {
+  color: #1890ff;
+  text-align: right;
+  span {
+    cursor: pointer;
+    &:hover {
+      opacity: 0.8;
+    }
+    svg {
+      margin-right: 3px;
+    }
+  }
+}
+
+.treeList {
+  :global {
+    .ant-tree-treenode,
+    .ant-tree-node-content-wrapper {
+      width: 100%;
+      margin-right: 30px;
+    }
+  }
+}
