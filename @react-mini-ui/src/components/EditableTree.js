@@ -1,7 +1,7 @@
 'use strict';
 
-import styles from './termStyle.less';
-import treeStyles from './editableTreeStyle.less';
+import styles from '../style/termStyle.less';
+import treeStyles from '../style/editableTreeStyle.less';
 import React, { useState } from 'react';
 
 import { List, Popconfirm, Modal, message } from 'antd';
