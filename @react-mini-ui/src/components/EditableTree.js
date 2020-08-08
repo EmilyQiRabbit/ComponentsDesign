@@ -1,7 +1,7 @@
 'use strict';
 
-import styles from '../style/termStyle.less';
-import treeStyles from '../style/editableTreeStyle.less';
+import styles from './termStyle.less';
+import treeStyles from './editableTreeStyle.less';
 import React, { useState } from 'react';
 
 import { List, Popconfirm, Modal, message } from 'antd';
@@ -33,7 +33,7 @@ export default function EditableTree(props) {
   // hover
   const [curHoverNode, setCurHoverNode] = useState(null);
   // 当前 focus（正在编辑）的 node
-  const [curFocusdNode, setCurFocusedNode] = useState(null);
+  const [curFocusedNode, setCurFocusedNode] = useState(null);
   // 是否新增
   const [adding, setAdding] = useState(false);
   // 需要新增子分类的节点
@@ -182,7 +182,7 @@ export default function EditableTree(props) {
 
   const handleNameChange = (e) => {
     setCurFocusedNode({
-      ...curFocusdNode,
+      ...curFocusedNode,
       title: e.target.value,
     });
   };
@@ -236,23 +236,24 @@ export default function EditableTree(props) {
     };
   };
 
+  const treeListProps = {
+    curHoverNode,
+    curFocusedNode,
+    handleNodeHover,
+    handleNameChange,
+    handleUpdate,
+    handleAddChildren,
+    handleEdit,
+    handleConfirmDelete,
+    handleDelete,
+    maxTreeLevel,
+    curTreeLevel: 1,
+    title,
+  };
+
   return (
     <>
-      <TreeList
-        dataList={dataList}
-        curHoverNode={curHoverNode}
-        curFocusedNode={curFocusdNode}
-        handleNodeHover={handleNodeHover}
-        handleNameChange={handleNameChange}
-        handleUpdate={handleUpdate}
-        handleAddChildren={handleAddChildren}
-        handleEdit={handleEdit}
-        handleConfirmDelete={handleConfirmDelete}
-        handleDelete={handleDelete}
-        maxTreeLevel={maxTreeLevel}
-        curTreeLevel={1}
-        title={title}
-      />
+      <TreeList dataList={dataList} {...treeListProps} />
       <AddNodeModal
         title={title}
         visible={adding}
@@ -312,21 +313,29 @@ function AddNodeModal(props) {
 }
 
 function TreeList(props) {
-  const {
-    dataList,
-    curHoverNode,
-    curFocusedNode,
-    handleNodeHover,
-    handleNameChange,
-    handleUpdate,
-    handleAddChildren,
-    handleEdit,
-    handleConfirmDelete,
-    handleDelete,
-    maxTreeLevel,
-    curTreeLevel,
-    title,
-  } = props;
+  const { dataList } = props;
+
+  const renderItem = (node) => {
+    return (
+      <TreeNodeItem
+        key={node.id}
+        nodeData={node}
+        curHoverNode={props.curHoverNode}
+        curFocusedNode={props.curFocusedNode}
+        handleNodeHover={props.handleNodeHover}
+        handleNameChange={props.handleNameChange}
+        handleUpdate={props.handleUpdate}
+        handleAddChildren={props.handleAddChildren}
+        handleEdit={props.handleEdit}
+        handleConfirmDelete={props.handleConfirmDelete}
+        handleDelete={props.handleDelete}
+        maxTreeLevel={props.maxTreeLevel}
+        curTreeLevel={props.curTreeLevel}
+        title={props.title}
+      />
+    );
+  };
+
   return (
     <List
       size="small"
@@ -335,27 +344,8 @@ function TreeList(props) {
       footer={null}
       bordered={false}
       dataSource={dataList}
-      onMouseLeave={handleNodeHover(null)}
-      renderItem={(node) => {
-        return (
-          <TreeNodeItem
-            key={node.id}
-            nodeData={node}
-            curHoverNode={curHoverNode}
-            curFocusedNode={curFocusedNode}
-            handleNodeHover={handleNodeHover}
-            handleNameChange={handleNameChange}
-            handleUpdate={handleUpdate}
-            handleAddChildren={handleAddChildren}
-            handleEdit={handleEdit}
-            handleConfirmDelete={handleConfirmDelete}
-            handleDelete={handleDelete}
-            maxTreeLevel={maxTreeLevel}
-            curTreeLevel={curTreeLevel}
-            title={title}
-          />
-        );
-      }}
+      onMouseLeave={props.handleNodeHover(null)}
+      renderItem={renderItem}
     />
   );
 }
