@@ -15,14 +15,23 @@ import {
 
 const noop = () => {};
 
+const defaultRequest = () =>
+  new Promise((resolve) =>
+    resolve({
+      status: { code: -1 },
+    }),
+  );
+
 export default function EditableTree(props) {
   const {
     type = '',
     dataList = [],
+    // 和父级组件的数据交互
     setList = noop,
-    postInsert = noop,
-    postUpdate = noop,
-    postRemove = noop,
+    // requests
+    postInsert = defaultRequest,
+    postUpdate = defaultRequest,
+    postRemove = defaultRequest,
     // 层级限制，默认无限制。
     maxTreeLevel = Infinity,
     title = '分类',
