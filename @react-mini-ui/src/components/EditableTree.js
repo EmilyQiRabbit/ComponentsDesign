@@ -22,6 +22,17 @@ const defaultRequest = () =>
     }),
   );
 
+const requestSuccess = (result) => {
+  try {
+    const {
+      status: { code },
+    } = result;
+    return code === 0;
+  } catch (e) {
+    return false;
+  }
+};
+
 export default function EditableTree(props) {
   const {
     type = '',
@@ -70,11 +81,6 @@ export default function EditableTree(props) {
     }
 
     setList(newlist);
-    // setTermList(newlist);
-    // setModalVisible(false);
-    // if (!currentItem || !currentItem._id) {
-    //   setCurrentTerm(newlist[0]);
-    // }
   };
 
   // 更新树 data
@@ -133,10 +139,7 @@ export default function EditableTree(props) {
   const postDeleteNode = async (term, isRecursive) => {
     try {
       const result = await postRemove({ id: term.id });
-      const {
-        status: { code },
-      } = result;
-      if (code === 0) {
+      if (requestSuccess(result)) {
         if (term.children) {
           term.children.forEach((childNode) => {
             postDeleteNode(childNode, true);
@@ -161,8 +164,7 @@ export default function EditableTree(props) {
             termId: term.id,
             title: term.title,
           });
-          const { status } = result;
-          if (status.code === 0) {
+          if (requestSuccess(result)) {
             handleResult(term, true);
           }
         } catch (e) {
@@ -222,11 +224,8 @@ export default function EditableTree(props) {
         params.parentId = addingChildrenForNode.id;
       }
       const result = await postInsert(params);
-      const {
-        data,
-        status: { code },
-      } = result;
-      if (code === 0 && data) {
+      if (requestSuccess(result)) {
+        const { data } = result;
         message.success('新建成功');
         handleResult(data, false);
         setAdding(false);
