@@ -33,37 +33,82 @@ const requestSuccess = (result) => {
   }
 };
 
-export default function EditableTree(props) {
-  const {
-    type = '',
-    dataList = [],
-    // 和父级组件的数据交互
-    setList = noop,
-    // requests
-    postInsert = defaultRequest,
-    postUpdate = defaultRequest,
-    postRemove = defaultRequest,
-    // 层级限制，默认无限制。
-    maxTreeLevel = Infinity,
-    title = '分类',
-  } = props;
+// 这个组件稍微复杂一些，用 class，比好多个 hook 更好维护一些。
+export default class EditableTree extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      disableHoverMove: false, // 正在编辑时，不响应 hover 事件
+      curHoverNode: null, // hover
+      curFocusedNode: null, // 当前 focus（正在编辑）的 node
+      adding: false, // 是否正在新增
+      addingChildrenForNode: null, // 需要新增子分类的节点
+      addingTermName: '', // 新增分类的名称
+    };
+  }
 
-  // 正在编辑时，不响应 hover 事件
-  const [disableHoverMove, setDisableHoverMove] = useState(false);
-  // hover
-  const [curHoverNode, setCurHoverNode] = useState(null);
-  // 当前 focus（正在编辑）的 node
-  const [curFocusedNode, setCurFocusedNode] = useState(null);
-  // 是否新增
-  const [adding, setAdding] = useState(false);
-  // 需要新增子分类的节点
-  const [addingChildrenForNode, setAddingChildrenForNode] = useState(null);
-  // 新增分类的名称
-  const [addingTermName, setAddingTermName] = useState('');
+  render() {
+    const {
+      dataList = [],
+      // 层级限制，默认无限制。
+      maxTreeLevel = Infinity,
+      title = '分类',
+    } = this.props;
+    const {
+      adding,
+      curHoverNode,
+      curFocusedNode,
+      addingChildrenForNode,
+    } = this.state;
+    const {
+      handleNodeHover,
+      handleNameChange,
+      handleUpdate,
+      handleAddChildren,
+      handleEdit,
+      handleConfirmDelete,
+      handleDelete,
+    } = this;
+    const treeListProps = {
+      curHoverNode,
+      curFocusedNode,
+      handleNodeHover,
+      handleNameChange,
+      handleUpdate,
+      handleAddChildren,
+      handleEdit,
+      handleConfirmDelete,
+      handleDelete,
+      maxTreeLevel,
+      curTreeLevel: 1,
+      title,
+    };
+    return (
+      <>
+        <TreeList dataList={dataList} {...treeListProps} />
+        <AddNodeModal
+          title={title}
+          visible={adding}
+          handleNewTermNameChange={this.handleNewTermNameChange}
+          addingChildrenForNode={addingChildrenForNode}
+          handleCreateCancel={this.handleCreateCancel}
+          handleCreate={this.handleCreate}
+        />
+        <div className={styles.newTerm} onClick={this.handleAddTerm}>
+          <span>
+            <PlusCircleOutlined />
+            {`新建${title}`}
+          </span>
+        </div>
+      </>
+    );
+  }
 
-  const handleDelete = (term) => {
+  handleDelete = (term) => {
     return () => {
-      term ? setDisableHoverMove(true) : setDisableHoverMove(false);
+      this.setState({
+        disableHoverMove: term ? true : false,
+      });
     };
   };
 
@@ -72,39 +117,41 @@ export default function EditableTree(props) {
    * @param doc
    * @param isUpdate
    */
-  const handleResult = (doc, isUpdate = false) => {
+  handleResult = (doc, isUpdate = false) => {
+    // setList：和父级组件的数据交互
+    const { dataList, setList = noop } = this.props;
     let newlist;
     if (isUpdate) {
-      newlist = updateNode(dataList, doc);
+      newlist = this.updateNode(dataList, doc);
     } else {
-      newlist = insertNode(dataList, doc);
+      newlist = this.insertNode(dataList, doc);
     }
 
     setList(newlist);
   };
 
   // 更新树 data
-  const updateNode = (treeList, node) => {
+  updateNode = (treeList, node) => {
     return treeList.map((item) => {
       if (item.id === node.id) {
         return node;
       } else if (item.children && item.children.length) {
-        item.children = updateNode(item.children, node);
+        item.children = this.updateNode(item.children, node);
       }
       return item;
     });
   };
 
   // 插入树 data
-  const insertNode = (treeList, node) => {
+  insertNode = (treeList, node) => {
     if (!node.parentId || node.parentId === '0') {
       return [node].concat(treeList);
     } else {
-      return findParentAndInsert(treeList, node);
+      return this.findParentAndInsert(treeList, node);
     }
   };
 
-  const findParentAndInsert = (treeList, node) => {
+  findParentAndInsert = (treeList, node) => {
     return treeList.map((item) => {
       if (item.id === node.parentId) {
         if (item.children) {
@@ -113,41 +160,48 @@ export default function EditableTree(props) {
           item.children = [node];
         }
       } else if (item.children) {
-        item.children = findParentAndInsert(item.children, node);
+        item.children = this.findParentAndInsert(item.children, node);
       }
       return item;
     });
   };
 
-  const deleteTreeNode = (treeList, node) => {
+  deleteTreeNode = (treeList, node) => {
     return treeList.filter((item) => {
       if (item.children) {
-        item.children = deleteTreeNode(item.children, node);
+        item.children = this.deleteTreeNode(item.children, node);
       }
       return item.id !== node.id;
     });
   };
 
-  const handleConfirmDelete = (term) => {
+  handleConfirmDelete = (term) => {
     return async () => {
-      await postDeleteNode(term);
-      setDisableHoverMove(false);
+      await this.postDeleteNode(term);
+      this.setState({
+        disableHoverMove: false,
+      });
     };
   };
 
   // 递归删除写在前端了，前端已经整理好了树结构
-  const postDeleteNode = async (term, isRecursive) => {
+  postDeleteNode = async (term, isRecursive) => {
     try {
+      const {
+        postRemove = defaultRequest,
+        dataList,
+        setList = noop,
+      } = this.props;
       const result = await postRemove({ id: term.id });
       if (requestSuccess(result)) {
         if (term.children) {
           term.children.forEach((childNode) => {
-            postDeleteNode(childNode, true);
+            this.postDeleteNode(childNode, true);
           });
         }
         if (!isRecursive) {
           // 递归内无需整理树结构，最父级删除一次即可
-          const newlist = deleteTreeNode(dataList, term);
+          const newlist = this.deleteTreeNode(dataList, term);
           setList(newlist);
         }
       }
@@ -156,65 +210,82 @@ export default function EditableTree(props) {
     }
   };
 
-  const handleUpdate = (term) => {
+  handleUpdate = (term) => {
     return async () => {
       if (term) {
         try {
+          const { postUpdate = defaultRequest } = this.props;
           const result = await postUpdate({
             termId: term.id,
             title: term.title,
           });
           if (requestSuccess(result)) {
-            handleResult(term, true);
+            this.handleResult(term, true);
           }
         } catch (e) {
           console.log('_postUpdate error: ', e);
         }
       }
-      setCurFocusedNode(null);
-      setDisableHoverMove(false);
+      this.setState({
+        curFocusedNode: null,
+        disableHoverMove: false,
+      });
     };
   };
 
-  const handleEdit = (term) => {
+  handleEdit = (term) => {
     return () => {
-      setCurFocusedNode(term);
-      setDisableHoverMove(true);
+      this.setState({
+        curFocusedNode: term,
+        disableHoverMove: true,
+      });
     };
   };
 
-  const handleNodeHover = (term) => {
+  handleNodeHover = (term) => {
     return () => {
-      if (!disableHoverMove) {
-        setCurHoverNode(term);
+      if (!this.state.disableHoverMove) {
+        this.setState({
+          curHoverNode: term,
+        });
       }
     };
   };
 
-  const handleNameChange = (e) => {
-    setCurFocusedNode({
-      ...curFocusedNode,
-      title: e.target.value,
+  handleNameChange = (e) => {
+    this.setState({
+      curFocusedNode: {
+        ...this.state.curFocusedNode,
+        title: e.target.value,
+      },
     });
   };
 
-  const handleNewTermNameChange = (e) => {
-    setAddingTermName(e.target.value);
+  handleNewTermNameChange = (e) => {
+    this.setState({
+      addingTermName: e.target.value,
+    });
   };
 
-  const handleAddTerm = () => {
-    setAdding(true);
-    setDisableHoverMove(true);
+  handleAddTerm = () => {
+    this.setState({
+      adding: true,
+      disableHoverMove: true,
+    });
   };
 
-  const handleCreateCancel = () => {
-    setAdding(false);
-    setDisableHoverMove(false);
-    setAddingChildrenForNode(null);
+  handleCreateCancel = () => {
+    this.setState({
+      adding: false,
+      disableHoverMove: false,
+      addingChildrenForNode: null,
+    });
   };
 
-  const handleCreate = async () => {
+  handleCreate = async () => {
     try {
+      const { addingTermName, addingChildrenForNode } = this.state;
+      const { type, postInsert = defaultRequest } = this.props;
       if (!addingTermName) {
         message.error('请填写名称');
         return;
@@ -227,57 +298,26 @@ export default function EditableTree(props) {
       if (requestSuccess(result)) {
         const { data } = result;
         message.success('新建成功');
-        handleResult(data, false);
-        setAdding(false);
-        setDisableHoverMove(false);
-        setAddingChildrenForNode(null);
+        this.handleResult(data, false);
+        this.setState({
+          adding: false,
+          disableHoverMove: false,
+          addingChildrenForNode: null,
+        });
       }
     } catch (e) {
       console.log('_postInsert error: ', e);
     }
   };
 
-  const handleAddChildren = (item) => {
+  handleAddChildren = (item) => {
     return () => {
-      setAddingChildrenForNode(item);
-      handleAddTerm();
+      this.setState({
+        addingChildrenForNode: item,
+      });
+      this.handleAddTerm();
     };
   };
-
-  const treeListProps = {
-    curHoverNode,
-    curFocusedNode,
-    handleNodeHover,
-    handleNameChange,
-    handleUpdate,
-    handleAddChildren,
-    handleEdit,
-    handleConfirmDelete,
-    handleDelete,
-    maxTreeLevel,
-    curTreeLevel: 1,
-    title,
-  };
-
-  return (
-    <>
-      <TreeList dataList={dataList} {...treeListProps} />
-      <AddNodeModal
-        title={title}
-        visible={adding}
-        handleNewTermNameChange={handleNewTermNameChange}
-        addingChildrenForNode={addingChildrenForNode}
-        handleCreateCancel={handleCreateCancel}
-        handleCreate={handleCreate}
-      />
-      <div className={styles.newTerm} onClick={handleAddTerm}>
-        <span>
-          <PlusCircleOutlined />
-          {`新建${title}`}
-        </span>
-      </div>
-    </>
-  );
 }
 
 function AddNodeModal(props) {
