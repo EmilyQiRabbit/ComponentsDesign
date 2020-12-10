@@ -10,9 +10,9 @@
     "outDir": "dist",
     "jsx": "react",
     "allowJs": false,
-    "module": "esnext",
+    "module": "esnext", // ts 编译后的 js 的模块类型
     "moduleResolution": "node",
-    "target": "es5",
+    "target": "es5", // ts 编译后的 js 的版本
     "lib": ["es2015", "dom"],
     "noEmitOnError": true,
     "noUnusedParameters": false,
